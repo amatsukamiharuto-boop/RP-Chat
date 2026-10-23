@@ -1,0 +1,125 @@
+import 'package:flutter/material.dart';
+
+import 'app_state.dart';
+import 'screens/char_screen.dart';
+import 'screens/chat_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/story_screen.dart';
+import 'widgets.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final state = AppState();
+  await state.init();
+  runApp(RpApp(state: state));
+}
+
+class RpApp extends StatelessWidget {
+  final AppState state;
+  const RpApp({super.key, required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF7C6CFF),
+      brightness: Brightness.dark,
+    );
+    return MaterialApp(
+      title: 'RP Gemini',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: scheme,
+        scaffoldBackgroundColor: const Color(0xFF0B0C16),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+      home: HomeShell(state: state),
+    );
+  }
+}
+
+class HomeShell extends StatefulWidget {
+  final AppState state;
+  const HomeShell({super.key, required this.state});
+
+  @override
+  State<HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends State<HomeShell> {
+  int _index = 0;
+
+  static const _titles = ['Chat', 'Set Karakter', 'Set Cerita', 'Setelan'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF16173A), Color(0xFF0B0C16)],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          title: Text(
+            _titles[_index],
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          actions: [
+            if (_index == 0)
+              IconButton(
+                tooltip: 'Reset percakapan',
+                icon: const Icon(Icons.delete_sweep_outlined),
+                onPressed: () => confirmReset(context, widget.state),
+              ),
+          ],
+        ),
+        body: IndexedStack(
+          index: _index,
+          children: [
+            ChatScreen(state: widget.state),
+            CharScreen(state: widget.state),
+            StoryScreen(state: widget.state),
+            SettingsScreen(state: widget.state),
+          ],
+        ),
+        bottomNavigationBar: NavigationBar(
+          backgroundColor: const Color(0xFF11121F),
+          selectedIndex: _index,
+          onDestinationSelected: (i) => setState(() => _index = i),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.chat_bubble_outline_rounded),
+              selectedIcon: Icon(Icons.chat_bubble_rounded),
+              label: 'Chat',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person_rounded),
+              label: 'Karakter',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.auto_stories_outlined),
+              selectedIcon: Icon(Icons.auto_stories_rounded),
+              label: 'Cerita',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings_rounded),
+              label: 'Setelan',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
