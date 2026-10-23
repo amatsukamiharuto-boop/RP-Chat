@@ -1,0 +1,57 @@
+# Daftar genre. Satu genre per baris. Baris yang diawali tanda # diabaikan.
+# Tambah, hapus, atau ubah sesukamu, lalu commit ke GitHub dan build ulang.
+Fantasi
+Cozy Fantasy
+Isekai
+Petualangan
+Aksi
+Romansa
+Komedi Romantis
+Slice of Life
+Komedi
+Drama
+Tragedi
+Coming of Age
+Misteri
+Detektif
+Thriller
+Psikologis
+Horor
+Gothic
+Supernatural
+Mitologi
+Dongeng
+Vampir
+Penyihir
+Fiksi Ilmiah
+Cyberpunk
+Steampunk
+Mecha
+Luar Angkasa
+Distopia
+Post-Apokaliptik
+Zombie
+Survival
+Perang
+Militer
+Spionase
+Kriminal
+Mafia
+Western
+Bajak Laut
+Samurai
+Wuxia
+Xianxia
+Kerajaan dan Istana
+Sejarah
+Lintas Waktu
+Dunia Paralel
+Sekolah
+Kampus
+Kantor
+Medis
+Olahraga
+Musik dan Idol
+Kuliner
+Anak Kecil
+Rape
