@@ -38,7 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final model = _model.text.trim();
     await widget.state.saveSettings(AppSettings(
       apiKey: _apiKey.text.trim(),
-      model: model.isEmpty ? 'gemini-2.5-flash' : model,
+      model: model.isEmpty ? 'gemini-3.5-flash-lite' : model,
       mode: _mode,
     ));
     if (!mounted) return;
@@ -77,8 +77,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               autocorrect: false,
               decoration: inputDeco(
                 'Model',
-                hint: 'gemini-2.5-flash',
-                helper: 'Contoh: gemini-2.5-flash atau gemini-2.5-pro',
+                hint: 'gemini-3.5-flash-lite',
+                helper: 'Contoh: gemini-2.5-flash atau gemini-3.5-flash-lite',
                 icon: Icons.memory_rounded,
               ),
             ),
