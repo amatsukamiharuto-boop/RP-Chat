@@ -5,7 +5,7 @@ class AppSettings {
 
   const AppSettings({
     this.apiKey = '',
-    this.model = 'gemini-2.5-flash',
+    this.model = 'gemini-3.5-flash-lite',
     this.mode = 'normal',
   });
 
@@ -13,7 +13,7 @@ class AppSettings {
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
         apiKey: (j['apiKey'] ?? '') as String,
-        model: (j['model'] ?? 'gemini-2.5-flash') as String,
+        model: (j['model'] ?? 'gemini-3.5-flash-lite') as String,
         mode: (j['mode'] ?? 'normal') as String,
       );
 }
