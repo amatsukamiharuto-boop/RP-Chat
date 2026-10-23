@@ -10,8 +10,53 @@ import 'widgets.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final state = AppState();
-  await state.init();
+  try {
+    await state.init();
+  } catch (e, st) {
+    runApp(StartupErrorApp(error: '$e\n\n$st'));
+    return;
+  }
   runApp(RpApp(state: state));
+}
+
+/// Ditampilkan kalau aplikasi gagal start, supaya penyebabnya terlihat
+/// (bukan layar putih kosong).
+class StartupErrorApp extends StatelessWidget {
+  final String error;
+  const StartupErrorApp({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
+      home: Scaffold(
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Aplikasi gagal start',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Screenshot layar ini dan kirim ke pembuat aplikasi.',
+                ),
+                const SizedBox(height: 16),
+                SelectableText(
+                  error,
+                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class RpApp extends StatelessWidget {
