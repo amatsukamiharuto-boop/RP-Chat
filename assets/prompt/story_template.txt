@@ -1,6 +1,0 @@
-### Pengaturan cerita
-Genre: {{genres}}
-Tempat: {{place}}
-Latar waktu: {{time}}
-
-Pertahankan nuansa genre, tempat, dan zaman ini sepanjang cerita. Bagian yang tertulis (tidak ditentukan) boleh kamu tentukan sendiri secara kreatif.
