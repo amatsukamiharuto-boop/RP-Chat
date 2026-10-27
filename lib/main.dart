@@ -5,6 +5,7 @@ import 'screens/char_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/story_screen.dart';
+import 'screens/user_screen.dart';
 import 'widgets.dart';
 
 Future<void> main() async {
@@ -97,7 +98,7 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
-  static const _titles = ['Chat', 'Set Karakter', 'Set Cerita', 'Setelan'];
+  static const _titles = ['Chat', 'Set Karakter', 'Identitasku', 'Set Cerita', 'Setelan'];
 
   @override
   Widget build(BuildContext context) {
@@ -133,6 +134,7 @@ class _HomeShellState extends State<HomeShell> {
           children: [
             ChatScreen(state: widget.state),
             CharScreen(state: widget.state),
+            UserScreen(state: widget.state),
             StoryScreen(state: widget.state),
             SettingsScreen(state: widget.state),
           ],
@@ -151,6 +153,11 @@ class _HomeShellState extends State<HomeShell> {
               icon: Icon(Icons.person_outline_rounded),
               selectedIcon: Icon(Icons.person_rounded),
               label: 'Karakter',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.account_circle_outlined),
+              selectedIcon: Icon(Icons.account_circle_rounded),
+              label: 'Aku',
             ),
             NavigationDestination(
               icon: Icon(Icons.auto_stories_outlined),
