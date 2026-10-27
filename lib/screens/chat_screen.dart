@@ -16,6 +16,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scroll = ScrollController();
 
+  /// Nama NPC yang sedang kamu gerakkan. null = karakter milikmu sendiri.
+  String? _actingAs;
+
   @override
   void initState() {
     super.initState();
@@ -41,11 +44,21 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  List<Npc> _myNpcs(AppState s) =>
+      s.story.npcs.where((n) => n.userControlled && n.name.trim().isNotEmpty).toList();
+
+  String? _validSpeaker(AppState s) {
+    final a = _actingAs;
+    if (a == null) return null;
+    return _myNpcs(s).any((n) => n.name.trim() == a) ? a : null;
+  }
+
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty || widget.state.sending) return;
+    final speaker = _validSpeaker(widget.state);
     _controller.clear();
-    final ok = await widget.state.send(text);
+    final ok = await widget.state.send(text, speaker: speaker);
     if (!ok && mounted && _controller.text.isEmpty) {
       _controller.text = text;
     }
@@ -58,7 +71,15 @@ class _ChatScreenState extends State<ChatScreen> {
       builder: (context, _) {
         final state = widget.state;
         final msgs = state.messages.where((m) => !m.hidden).toList();
-        final speaker = state.character.name.isEmpty ? 'Narator' : state.character.name;
+        final charLabel = state.character.name.isEmpty ? 'Narator' : state.character.name;
+        final selfLabel = state.user.name.isEmpty ? 'Aku' : state.user.name;
+        final mine = _myNpcs(state);
+        final speaker = _validSpeaker(state);
+
+        String labelFor(ChatMessage m) {
+          if (m.role == 'user') return m.speaker ?? state.user.name;
+          return charLabel;
+        }
 
         return Column(
           children: [
@@ -74,21 +95,83 @@ class _ChatScreenState extends State<ChatScreen> {
                         if (i >= msgs.length) {
                           return _Bubble(
                             message: const ChatMessage(role: 'model', text: '*menulis...*'),
-                            speaker: speaker,
+                            label: charLabel,
                           );
                         }
-                        return _Bubble(message: msgs[i], speaker: speaker);
+                        return _Bubble(message: msgs[i], label: labelFor(msgs[i]));
                       },
                     ),
             ),
+            if (mine.isNotEmpty)
+              _SpeakerBar(
+                selfLabel: selfLabel,
+                npcNames: [for (final n in mine) n.name.trim()],
+                selected: speaker,
+                onSelected: (name) => setState(() => _actingAs = name),
+              ),
             _InputBar(
               controller: _controller,
               sending: state.sending,
+              hint: speaker == null
+                  ? 'Tulis aksi atau dialog...'
+                  : 'Tulis aksi atau dialog sebagai $speaker...',
               onSend: _send,
             ),
           ],
         );
       },
+    );
+  }
+}
+
+class _SpeakerBar extends StatelessWidget {
+  final String selfLabel;
+  final List<String> npcNames;
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+
+  const _SpeakerBar({
+    required this.selfLabel,
+    required this.npcNames,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget chip(String label, bool isSelected, VoidCallback onTap) => Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: ChoiceChip(
+            label: Text(label),
+            selected: isSelected,
+            showCheckmark: false,
+            backgroundColor: kField,
+            selectedColor: const Color(0xFF4A3FA8),
+            shape: const StadiumBorder(),
+            side: BorderSide(color: isSelected ? kAccent : const Color(0x22FFFFFF)),
+            onSelected: (_) => onTap(),
+          ),
+        );
+
+    return Container(
+      color: const Color(0xFF11121F),
+      padding: const EdgeInsets.fromLTRB(12, 8, 0, 0),
+      child: SizedBox(
+        height: 40,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: Center(
+                child: Text('Bicara sebagai:', style: TextStyle(color: kMuted, fontSize: 12.5)),
+              ),
+            ),
+            chip(selfLabel, selected == null, () => onSelected(null)),
+            for (final n in npcNames) chip(n, selected == n, () => onSelected(n)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -168,7 +251,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               details.isEmpty
-                  ? 'Atur karakter dan cerita di tab Karakter dan Cerita, atau langsung mulai bermain.'
+                  ? 'Atur karakter, identitasmu, dan cerita di tab bawah, atau langsung mulai bermain.'
                   : details.join('  •  '),
               textAlign: TextAlign.center,
               style: const TextStyle(color: kMuted, height: 1.4),
@@ -200,8 +283,8 @@ class _EmptyState extends StatelessWidget {
 
 class _Bubble extends StatelessWidget {
   final ChatMessage message;
-  final String speaker;
-  const _Bubble({required this.message, required this.speaker});
+  final String label;
+  const _Bubble({required this.message, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -230,15 +313,15 @@ class _Bubble extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (!isUser)
+              if (label.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    speaker,
-                    style: const TextStyle(
+                    label,
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFFB9B0FF),
+                      color: isUser ? const Color(0xFFE2DCFF) : const Color(0xFFB9B0FF),
                     ),
                   ),
                 ),
@@ -256,11 +339,13 @@ class _Bubble extends StatelessWidget {
 class _InputBar extends StatelessWidget {
   final TextEditingController controller;
   final bool sending;
+  final String hint;
   final VoidCallback onSend;
 
   const _InputBar({
     required this.controller,
     required this.sending,
+    required this.hint,
     required this.onSend,
   });
 
@@ -282,7 +367,7 @@ class _InputBar extends StatelessWidget {
               maxLines: 5,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
-                hintText: 'Tulis aksi atau dialog...',
+                hintText: hint,
                 filled: true,
                 fillColor: kField,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
