@@ -11,6 +11,7 @@ import 'prompt_builder.dart';
 class AppState extends ChangeNotifier {
   AppSettings settings = const AppSettings();
   CharProfile character = const CharProfile();
+  UserProfile user = const UserProfile();
   StoryConfig story = const StoryConfig();
   final List<ChatMessage> messages = [];
   List<String> allGenres = [];
@@ -35,6 +36,7 @@ class AppState extends ChangeNotifier {
 
     settings = _read('settings', AppSettings.fromJson) ?? const AppSettings();
     character = _read('character', CharProfile.fromJson) ?? const CharProfile();
+    user = _read('user', UserProfile.fromJson) ?? const UserProfile();
     story = _read('story', StoryConfig.fromJson) ?? const StoryConfig();
 
     final rawMessages = _prefs.getString('messages');
@@ -69,6 +71,12 @@ class AppState extends ChangeNotifier {
   Future<void> saveCharacter(CharProfile c) async {
     character = c;
     await _prefs.setString('character', jsonEncode(c.toJson()));
+    notifyListeners();
+  }
+
+  Future<void> saveUser(UserProfile u) async {
+    user = u;
+    await _prefs.setString('user', jsonEncode(u.toJson()));
     notifyListeners();
   }
 
@@ -110,7 +118,7 @@ class AppState extends ChangeNotifier {
     return h;
   }
 
-  Future<bool> send(String text, {bool hidden = false}) async {
+  Future<bool> send(String text, {bool hidden = false, String? speaker}) async {
     if (sending) return false;
     if (settings.apiKey.isEmpty) {
       error = 'Isi API key Gemini dulu di tab Setelan.';
@@ -118,7 +126,12 @@ class AppState extends ChangeNotifier {
       return false;
     }
 
-    final userMsg = ChatMessage(role: 'user', text: text, hidden: hidden);
+    final userMsg = ChatMessage(
+      role: 'user',
+      text: text,
+      hidden: hidden,
+      speaker: speaker,
+    );
     messages.add(userMsg);
     sending = true;
     error = null;
@@ -131,6 +144,7 @@ class AppState extends ChangeNotifier {
         systemPrompt: _prompts.build(
           mode: settings.mode,
           character: character,
+          user: user,
           story: story,
         ),
         history: _historyForRequest(),
