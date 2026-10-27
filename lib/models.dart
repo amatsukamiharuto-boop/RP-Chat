@@ -13,11 +13,12 @@ class AppSettings {
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
         apiKey: (j['apiKey'] ?? '') as String,
-        model: (j['model'] ?? 'gemini-3.5-flash-lite') as String,
+        model: (j['model'] ?? 'gemini-2.5-flash') as String,
         mode: (j['mode'] ?? 'normal') as String,
       );
 }
 
+/// Karakter utama yang diperankan AI.
 class CharProfile {
   final String name;
   final String age;
@@ -53,25 +54,96 @@ class CharProfile {
       );
 }
 
+/// Identitas pengguna (karakter yang kamu mainkan sendiri).
+class UserProfile {
+  final String name;
+  final String age;
+  final String identity;
+  final String hiddenIdentity;
+
+  const UserProfile({
+    this.name = '',
+    this.age = '',
+    this.identity = '',
+    this.hiddenIdentity = '',
+  });
+
+  bool get isEmpty =>
+      name.isEmpty && age.isEmpty && identity.isEmpty && hiddenIdentity.isEmpty;
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'age': age,
+        'identity': identity,
+        'hiddenIdentity': hiddenIdentity,
+      };
+
+  factory UserProfile.fromJson(Map<String, dynamic> j) => UserProfile(
+        name: (j['name'] ?? '') as String,
+        age: (j['age'] ?? '') as String,
+        identity: (j['identity'] ?? '') as String,
+        hiddenIdentity: (j['hiddenIdentity'] ?? '') as String,
+      );
+}
+
+/// Tokoh tambahan di cerita. Bisa digerakkan AI atau oleh pengguna.
+class Npc {
+  final String name;
+  final String age;
+  final String description;
+  final bool userControlled;
+
+  const Npc({
+    this.name = '',
+    this.age = '',
+    this.description = '',
+    this.userControlled = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'age': age,
+        'description': description,
+        'userControlled': userControlled,
+      };
+
+  factory Npc.fromJson(Map<String, dynamic> j) => Npc(
+        name: (j['name'] ?? '') as String,
+        age: (j['age'] ?? '') as String,
+        description: (j['description'] ?? '') as String,
+        userControlled: (j['userControlled'] ?? false) as bool,
+      );
+}
+
 class StoryConfig {
   final List<String> genres;
   final String place;
   final String time;
+  final List<Npc> npcs;
 
   const StoryConfig({
     this.genres = const [],
     this.place = '',
     this.time = '',
+    this.npcs = const [],
   });
 
   bool get isEmpty => genres.isEmpty && place.isEmpty && time.isEmpty;
 
-  Map<String, dynamic> toJson() => {'genres': genres, 'place': place, 'time': time};
+  Map<String, dynamic> toJson() => {
+        'genres': genres,
+        'place': place,
+        'time': time,
+        'npcs': npcs.map((n) => n.toJson()).toList(),
+      };
 
   factory StoryConfig.fromJson(Map<String, dynamic> j) => StoryConfig(
         genres: ((j['genres'] ?? []) as List).map((e) => e.toString()).toList(),
         place: (j['place'] ?? '') as String,
         time: (j['time'] ?? '') as String,
+        npcs: ((j['npcs'] ?? []) as List)
+            .map((e) => Npc.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 }
 
@@ -80,13 +152,34 @@ class ChatMessage {
   final String text;
   final bool hidden;
 
-  const ChatMessage({required this.role, required this.text, this.hidden = false});
+  /// Nama NPC yang sedang digerakkan pengguna. Kosong = karakter pengguna sendiri.
+  final String? speaker;
 
-  Map<String, dynamic> toJson() => {'role': role, 'text': text, 'hidden': hidden};
+  const ChatMessage({
+    required this.role,
+    required this.text,
+    this.hidden = false,
+    this.speaker,
+  });
+
+  /// Teks yang dikirim ke Gemini. Pesan NPC diberi awalan [Nama].
+  String get requestText {
+    final s = speaker;
+    if (role == 'user' && s != null && s.isNotEmpty) return '[$s] $text';
+    return text;
+  }
+
+  Map<String, dynamic> toJson() => {
+        'role': role,
+        'text': text,
+        'hidden': hidden,
+        'speaker': speaker,
+      };
 
   factory ChatMessage.fromJson(Map<String, dynamic> j) => ChatMessage(
         role: (j['role'] ?? 'user') as String,
         text: (j['text'] ?? '') as String,
         hidden: (j['hidden'] ?? false) as bool,
+        speaker: j['speaker'] as String?,
       );
 }
