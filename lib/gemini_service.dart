@@ -27,7 +27,7 @@ class GeminiService {
           {
             'role': m.role,
             'parts': [
-              {'text': m.text},
+              {'text': m.requestText},
             ],
           },
       ],
