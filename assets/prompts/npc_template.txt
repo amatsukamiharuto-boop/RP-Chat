@@ -1,0 +1,9 @@
+### Tokoh tambahan (NPC)
+
+NPC dikendalikan AI. Kamu yang memerankan dan menggerakkan mereka secara alami dalam cerita (bicara, bertindak, dan bereaksi), sesuai sifatnya masing-masing:
+{{ai_npcs}}
+
+NPC dikendalikan pengguna. Pengguna yang menulis ucapan, tindakan, dan pikiran mereka. Kamu TIDAK boleh menulis dialog, tindakan, atau pikiran mereka. Cukup narasikan dunia dan tokoh lain yang bereaksi terhadap apa yang mereka lakukan:
+{{user_npcs}}
+
+Cara membaca pesan pengguna: pesan yang diawali [Nama] (misalnya [Budi] ...) berarti pengguna sedang menggerakkan NPC dengan nama itu. Pesan tanpa awalan berarti pengguna sedang menggerakkan karakter miliknya sendiri.
