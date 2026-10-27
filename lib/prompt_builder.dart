@@ -9,7 +9,9 @@ class PromptBuilder {
   final String _normal;
   final String _gelap;
   final String _charTpl;
+  final String _userTpl;
   final String _storyTpl;
+  final String _npcTpl;
   final String _opening;
 
   PromptBuilder._(
@@ -17,7 +19,9 @@ class PromptBuilder {
     this._normal,
     this._gelap,
     this._charTpl,
+    this._userTpl,
     this._storyTpl,
+    this._npcTpl,
     this._opening,
   );
 
@@ -28,7 +32,9 @@ class PromptBuilder {
       await read('mode_normal.txt'),
       await read('mode_gelap.txt'),
       await read('character_template.txt'),
+      await read('user_template.txt'),
       await read('story_template.txt'),
+      await read('npc_template.txt'),
       await read('opening_prompt.txt'),
     );
   }
@@ -38,6 +44,7 @@ class PromptBuilder {
   String build({
     required String mode,
     required CharProfile character,
+    required UserProfile user,
     required StoryConfig story,
   }) {
     final parts = <String>[
@@ -55,6 +62,15 @@ class PromptBuilder {
       }));
     }
 
+    if (!user.isEmpty) {
+      parts.add(_fill(_userTpl, {
+        'name': user.name,
+        'age': user.age,
+        'identity': user.identity,
+        'hidden_identity': user.hiddenIdentity,
+      }));
+    }
+
     if (!story.isEmpty) {
       parts.add(_fill(_storyTpl, {
         'genres': story.genres.join(', '),
@@ -63,7 +79,23 @@ class PromptBuilder {
       }));
     }
 
+    if (story.npcs.isNotEmpty) {
+      final ai = story.npcs.where((n) => !n.userControlled).map(_npcLine).toList();
+      final mine = story.npcs.where((n) => n.userControlled).map(_npcLine).toList();
+      parts.add(_fill(_npcTpl, {
+        'ai_npcs': ai.isEmpty ? '(tidak ada)' : ai.join('\n'),
+        'user_npcs': mine.isEmpty ? '(tidak ada)' : mine.join('\n'),
+      }));
+    }
+
     return parts.join('\n\n');
+  }
+
+  static String _npcLine(Npc n) {
+    final b = StringBuffer('- ${n.name.trim().isEmpty ? '(tanpa nama)' : n.name.trim()}');
+    if (n.age.trim().isNotEmpty) b.write(' (umur: ${n.age.trim()})');
+    if (n.description.trim().isNotEmpty) b.write(': ${n.description.trim()}');
+    return b.toString();
   }
 
   static String _fill(String tpl, Map<String, String> values) {
