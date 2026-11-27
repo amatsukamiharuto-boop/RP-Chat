@@ -25,7 +25,8 @@ class _StoryScreenState extends State<StoryScreen> {
     final s = widget.state.story;
     _place = TextEditingController(text: s.place);
     _time = TextEditingController(text: s.time);
-    _selected.addAll(s.genres);
+    // Genre lama yang sudah dihapus dari genres.txt ikut dibuang.
+    _selected.addAll(s.genres.where(widget.state.allGenres.contains));
     _npcs.addAll(s.npcs);
   }
 

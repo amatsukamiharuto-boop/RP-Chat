@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_state.dart';
 import '../models.dart';
@@ -23,6 +24,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     widget.state.addListener(_scrollToEnd);
+    _jumpToEnd();
   }
 
   @override
@@ -31,6 +33,15 @@ class _ChatScreenState extends State<ChatScreen> {
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  /// Saat app dibuka, langsung lompat ke pesan terakhir.
+  void _jumpToEnd([int frames = 4]) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      if (frames > 1) _jumpToEnd(frames - 1);
+    });
   }
 
   void _scrollToEnd() {
@@ -51,6 +62,53 @@ class _ChatScreenState extends State<ChatScreen> {
     final a = _actingAs;
     if (a == null) return null;
     return _myNpcs(s).any((n) => n.name.trim() == a) ? a : null;
+  }
+
+  Future<void> _showActions(ChatMessage m) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF14152A),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy_rounded),
+              title: const Text('Salin'),
+              onTap: () => Navigator.pop(ctx, 'copy'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Edit'),
+              onTap: () => Navigator.pop(ctx, 'edit'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded),
+              title: const Text('Hapus'),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'copy') {
+      await Clipboard.setData(ClipboardData(text: m.text));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pesan disalin')),
+      );
+    } else if (action == 'edit') {
+      final t = await showDialog<String>(
+        context: context,
+        builder: (_) => _EditDialog(initial: m.text),
+      );
+      if (t != null && t.trim().isNotEmpty) {
+        await widget.state.editMessage(m, t.trim());
+      }
+    } else if (action == 'delete') {
+      await widget.state.deleteMessage(m);
+    }
   }
 
   Future<void> _send() async {
@@ -98,7 +156,22 @@ class _ChatScreenState extends State<ChatScreen> {
                             label: charLabel,
                           );
                         }
-                        return _Bubble(message: msgs[i], label: labelFor(msgs[i]));
+                        final m = msgs[i];
+                        final isLast = i == msgs.length - 1;
+                        final isModel = m.role == 'model';
+                        final isSpeaking = identical(state.speakingMsg, m);
+                        return _Bubble(
+                          message: m,
+                          label: labelFor(m),
+                          onMenu: state.sending ? null : () => _showActions(m),
+                          onRegenerate: isLast && isModel && !state.sending
+                              ? state.regenerate
+                              : null,
+                          speaking: isSpeaking,
+                          onSpeak: isModel && !state.sending
+                              ? () => isSpeaking ? state.stopSpeaking() : state.speak(m)
+                              : null,
+                        );
                       },
                     ),
             ),
@@ -284,7 +357,19 @@ class _EmptyState extends StatelessWidget {
 class _Bubble extends StatelessWidget {
   final ChatMessage message;
   final String label;
-  const _Bubble({required this.message, required this.label});
+  final VoidCallback? onMenu;
+  final VoidCallback? onRegenerate;
+  final VoidCallback? onSpeak;
+  final bool speaking;
+
+  const _Bubble({
+    required this.message,
+    required this.label,
+    this.onMenu,
+    this.onRegenerate,
+    this.onSpeak,
+    this.speaking = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -313,21 +398,60 @@ class _Bubble extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (label.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: isUser ? const Color(0xFFE2DCFF) : const Color(0xFFB9B0FF),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (label.isNotEmpty)
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isUser ? const Color(0xFFE2DCFF) : const Color(0xFFB9B0FF),
+                      ),
                     ),
-                  ),
-                ),
+                  if (onSpeak != null)
+                    InkWell(
+                      onTap: onSpeak,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 2, 0, 2),
+                        child: Icon(
+                          speaking ? Icons.stop_circle_outlined : Icons.volume_up_rounded,
+                          size: 18,
+                          color: speaking ? kAccent : kMuted,
+                        ),
+                      ),
+                    ),
+                  if (onMenu != null)
+                    InkWell(
+                      onTap: onMenu,
+                      borderRadius: BorderRadius.circular(12),
+                      child: const Padding(
+                        padding: EdgeInsets.fromLTRB(8, 2, 0, 2),
+                        child: Icon(Icons.more_horiz_rounded, size: 18, color: kMuted),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
               SelectableText.rich(
                 TextSpan(children: formatRp(message.text, base)),
               ),
+              if (onRegenerate != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: TextButton.icon(
+                    onPressed: onRegenerate,
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: const Text('Ulangi balasan'),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -399,6 +523,48 @@ class _InputBar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EditDialog extends StatefulWidget {
+  final String initial;
+  const _EditDialog({required this.initial});
+
+  @override
+  State<_EditDialog> createState() => _EditDialogState();
+}
+
+class _EditDialogState extends State<_EditDialog> {
+  late final TextEditingController _c = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit pesan'),
+      content: TextField(
+        controller: _c,
+        autofocus: true,
+        minLines: 3,
+        maxLines: 10,
+        decoration: inputDeco('Isi pesan'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Batal'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _c.text),
+          child: const Text('Simpan'),
+        ),
+      ],
     );
   }
 }

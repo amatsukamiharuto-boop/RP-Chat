@@ -95,10 +95,30 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   int _index = 0;
 
   static const _titles = ['Chat', 'Set Karakter', 'Identitasku', 'Set Cerita', 'Setelan'];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Suara berhenti saat app ditinggalkan.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
+    if (lifecycle == AppLifecycleState.paused) {
+      widget.state.stopSpeaking();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +141,12 @@ class _HomeShellState extends State<HomeShell> {
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
           actions: [
+            if (_index == 0)
+              IconButton(
+                tooltip: 'Hapus giliran terakhir',
+                icon: const Icon(Icons.undo_rounded),
+                onPressed: widget.state.undoLast,
+              ),
             if (_index == 0)
               IconButton(
                 tooltip: 'Reset percakapan',

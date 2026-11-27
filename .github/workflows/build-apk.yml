@@ -29,12 +29,12 @@ jobs:
           rm -rf lib pubspec.yaml test
           cp -r "$RUNNER_TEMP/keep/lib" "$RUNNER_TEMP/keep/pubspec.yaml" .
 
-      - name: Allow internet access and set app name
+      - name: Allow internet access, voice (TTS), and set app name
         run: |
           MANIFEST=android/app/src/main/AndroidManifest.xml
-          sed -i '0,/<application/s//<uses-permission android:name="android.permission.INTERNET"\/>\n    <application/' "$MANIFEST"
+          sed -i '0,/<application/s//<uses-permission android:name="android.permission.INTERNET"\/>\n    <queries><intent><action android:name="android.intent.action.TTS_SERVICE"\/><\/intent><\/queries>\n    <application/' "$MANIFEST"
           sed -i 's/android:label="[^"]*"/android:label="RP Gemini"/' "$MANIFEST"
-          grep -n "INTERNET" "$MANIFEST"
+          grep -n "INTERNET\|TTS_SERVICE" "$MANIFEST"
 
       - name: Get packages
         run: flutter pub get

@@ -3,18 +3,48 @@ class AppSettings {
   final String model;
   final String mode; // 'normal' atau 'gelap'
 
+  // Suara (text-to-speech)
+  final bool ttsAuto; // bacakan balasan baru otomatis
+  final bool ttsDialogOnly; // hanya bacakan isi "dialog"
+  final String ttsVoice; // nama suara; kosong = bawaan sistem
+  final String ttsLocale; // contoh: id-ID
+  final double ttsRate; // 0.2 - 1.0
+  final double ttsPitch; // 0.8 - 1.6
+
   const AppSettings({
     this.apiKey = '',
     this.model = 'gemini-3.5-flash-lite',
     this.mode = 'normal',
+    this.ttsAuto = false,
+    this.ttsDialogOnly = false,
+    this.ttsVoice = '',
+    this.ttsLocale = 'id-ID',
+    this.ttsRate = 0.5,
+    this.ttsPitch = 1.15,
   });
 
-  Map<String, dynamic> toJson() => {'apiKey': apiKey, 'model': model, 'mode': mode};
+  Map<String, dynamic> toJson() => {
+        'apiKey': apiKey,
+        'model': model,
+        'mode': mode,
+        'ttsAuto': ttsAuto,
+        'ttsDialogOnly': ttsDialogOnly,
+        'ttsVoice': ttsVoice,
+        'ttsLocale': ttsLocale,
+        'ttsRate': ttsRate,
+        'ttsPitch': ttsPitch,
+      };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
         apiKey: (j['apiKey'] ?? '') as String,
-        model: (j['model'] ?? 'gemini-2.5-flash') as String,
+        model: (j['model'] ?? 'gemini-3.5-flash-lite') as String,
         mode: (j['mode'] ?? 'normal') as String,
+        ttsAuto: (j['ttsAuto'] ?? false) as bool,
+        ttsDialogOnly: (j['ttsDialogOnly'] ?? false) as bool,
+        ttsVoice: (j['ttsVoice'] ?? '') as String,
+        ttsLocale: (j['ttsLocale'] ?? 'id-ID') as String,
+        ttsRate: ((j['ttsRate'] ?? 0.5) as num).toDouble(),
+        ttsPitch: ((j['ttsPitch'] ?? 1.15) as num).toDouble(),
       );
 }
 
